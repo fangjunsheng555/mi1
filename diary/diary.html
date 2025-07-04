@@ -107,14 +107,14 @@
   <h2>🌸 蜜语日记 🌸</h2>
 
   <!-- BGM 播放 -->
-  <button onclick="playBgm()">播放背景音乐《浪漫手机》</button>
+  <button onclick="playBgm()">点击播放背景音乐</button>
   <audio id="bgm" src="浪漫手机.mp3" loop></audio>
 
   <!-- 定位输入框（只读）-->
   <input type="text" id="location" readonly placeholder="定位：获取中…">
 
   <!-- 密码验证 -->
-  <input type="password" id="password" placeholder="请输入密码" />
+  <input type="password" id="password" placeholder="请输入密码（蜜儿我们认识的年月日）" />
 
   <!-- 日记发表区 -->
   <textarea id="diaryContent" rows="4" placeholder="今天想记录些什么呢？"></textarea>
@@ -170,7 +170,7 @@
     // 提交日记
     async function submitDiary() {
       const password = document.getElementById('password').value;
-      const correctPassword = '20200211'; // 正确的密码
+      const correctPassword = '200211'; // 正确的密码
 
       // 验证密码
       if (password !== correctPassword) {
