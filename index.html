@@ -17,33 +17,29 @@
       color: #a0005b;
       overflow-x: hidden;
     }
-
     @keyframes gradient {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-
     h1 {
       font-size: 3em;
       margin-top: 50px;
       animation: fadeIn 2s ease;
       text-shadow: 2px 2px 6px #ffb6c1;
+      cursor: pointer; /* 提示标题可点击 */
     }
-
     #blessing {
       font-size: 1.8em;
       margin: 30px auto;
       color: #d63384;
       animation: fadeIn 3s ease 1s both;
     }
-
     .slideshow-container {
       position: relative;
       max-width: 300px;
       margin: 30px auto;
     }
-
     .slide {
       display: none;
       width: 100%;
@@ -51,7 +47,6 @@
       box-shadow: 0 8px 20px rgba(255, 105, 180, 0.3);
       animation: fadeIn 1s ease;
     }
-
     .prev, .next {
       cursor: pointer;
       position: absolute;
@@ -65,20 +60,16 @@
       border-radius: 50%;
       user-select: none;
     }
-
     .prev:hover, .next:hover {
       background-color: #ff1493;
     }
-
     .prev { left: -40px; }
     .next { right: -40px; }
-
     #countdown {
       font-size: 1.4em;
       margin-top: 20px;
       color: #6f42c1;
     }
-
     button {
       font-size: 18px;
       padding: 12px 25px;
@@ -90,18 +81,15 @@
       box-shadow: 0 4px 15px rgba(255,105,180,0.6);
       margin-top: 30px;
     }
-
     button:hover {
       background-color: #ff1493;
     }
-
     #lyrics {
       margin-top: 20px;
       font-size: 1.2em;
       color: #8e24aa;
       font-style: italic;
     }
-
     .credit {
       position: fixed;
       bottom: 15px;
@@ -109,7 +97,6 @@
       font-size: 0.9em;
       color: #b25e99;
     }
-
     canvas {
       position: fixed;
       top: 0;
@@ -117,7 +104,6 @@
       z-index: 999;
       pointer-events: none;
     }
-
     .balloon {
       position: fixed;
       bottom: -100px;
@@ -128,7 +114,6 @@
       z-index: 998;
       animation: floatUp linear forwards;
     }
-
     .balloon::after {
       content: '';
       position: absolute;
@@ -139,17 +124,14 @@
       background-color: #555;
       transform: translateX(-50%);
     }
-
     @keyframes floatUp {
       0% { transform: translateY(0); opacity: 1; }
       100% { transform: translateY(-120vh); opacity: 0; }
     }
-
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
     /* 留言墙样式 */
     #message-wall {
       max-width: 400px;
@@ -160,13 +142,11 @@
       border-radius: 12px;
       box-shadow: 0 4px 15px rgba(255,105,180,0.3);
     }
-
     #message-wall h2 {
       color: #d63384;
       text-align: center;
       margin-bottom: 12px;
     }
-
     #contact-form input, #contact-form textarea {
       width: 100%;
       font-size: 1em;
@@ -177,7 +157,6 @@
       font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
       resize: vertical;
     }
-
     #contact-form button {
       width: 100%;
       background: #d63384;
@@ -194,7 +173,6 @@
     #contact-form button:hover {
       background-color: #a52057;
     }
-
     #form-status {
       margin-top: 10px;
       font-size: 1em;
@@ -224,8 +202,8 @@
     <img class="slide" src="mi12.jpg" />
     <img class="slide" src="mi13.jpg" />
     <img class="slide" src="mi14.jpg" />
-    <a class="prev" onclick="plusSlides(-1)">❮</a >
-    <a class="next" onclick="plusSlides(1)">❯</a >
+    <a class="prev" onclick="plusSlides(-1)">❮</a>
+    <a class="next" onclick="plusSlides(1)">❯</a>
   </div>
 
   <div id="countdown">倒计时加载中…</div>
@@ -247,9 +225,6 @@
 
   <div class="credit">miForever · 你在我身边，是我最大的幸运</div>
 
-  <!-- 跳转按钮 -->
-  <button onclick="window.location.href='diary/diary.html'">前往密语日记</button>
-
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
     emailjs.init('J0M9Mc1uS1LlPMqUp'); // 你的 EmailJS Public Key
@@ -258,10 +233,8 @@
     const statusDiv = document.getElementById('form-status');
 
     form.addEventListener('submit', function(event) {
-      event.preventDefault(); // 阻止默认刷新
-
+      event.preventDefault();
       statusDiv.textContent = '正在发送...';
-
       emailjs.sendForm('service_sgmxopd', 'template_wauxdt6', this)
         .then(() => {
           statusDiv.textContent = '留言发送成功！谢谢你的祝福💖';
@@ -272,10 +245,9 @@
         });
     });
 
-    // 音乐播放函数
+    // 音乐播放和特效
     const audio = document.getElementById("bgm");
     const lyrics = document.getElementById("lyrics");
-
     function startCelebration() {
       audio.play().then(() => {
         lyrics.textContent = "我要的只是你在我身边";
@@ -284,97 +256,114 @@
         alert("请点击允许浏览器播放音频");
       });
     }
-
     function startBalloons() {
       setInterval(() => {
         const balloon = document.createElement('div');
         balloon.className = 'balloon';
-        const colors = ['#ff69b4', '#ffd700', '#87ceeb', '#98fb98', '#ff7f50', '#dda0dd'];
-        balloon.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        balloon.style.left = Math.random() * window.innerWidth + 'px';
-        balloon.style.animationDuration = (6 + Math.random() * 3) + 's';
+        const colors = ['#ff69b4','#ffd700','#87ceeb','#98fb98','#ff7f50','#dda0dd'];
+        balloon.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+        balloon.style.left = Math.random()*window.innerWidth+'px';
+        balloon.style.animationDuration=(6+Math.random()*3)+'s';
         document.body.appendChild(balloon);
-        setTimeout(() => balloon.remove(), 10000);
-      }, 800);
+        setTimeout(()=>balloon.remove(),10000);
+      },800);
     }
 
+    // 倒计时
     function updateCountdown() {
       const now = new Date();
-      const target = new Date(now.getFullYear(), 6, 5);
-      if (now > target) target.setFullYear(target.getFullYear() + 1);
+      const target = new Date(now.getFullYear(),6,5);
+      if(now>target) target.setFullYear(target.getFullYear()+1);
       const diff = target - now;
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor(diff / (1000 * 60 * 60) % 24);
-      const minutes = Math.floor(diff / (1000 * 60) % 60);
-      const seconds = Math.floor(diff / 1000 % 60);
+      const days = Math.floor(diff/(1000*60*60*24));
+      const hours = Math.floor(diff/(1000*60*60)%24);
+      const minutes = Math.floor(diff/(1000*60)%60);
+      const seconds = Math.floor(diff/1000%60);
       document.getElementById("countdown").textContent =
         `距离蜜儿生日还有 ${days} 天 ${hours} 小时 ${minutes} 分 ${seconds} 秒`;
     }
-    setInterval(updateCountdown, 1000);
+    setInterval(updateCountdown,1000);
     updateCountdown();
 
     // 图片轮播
-    let slideIndex = 0;
-    const slides = document.getElementsByClassName("slide");
-    function showSlides(n) {
-      if (n >= slides.length) slideIndex = 0;
-      if (n < 0) slideIndex = slides.length - 1;
-      for (let i = 0; i < slides.length; i++) {
-        slides[i].style.display = "none";
+    let slideIndex=0;
+    const slides=document.getElementsByClassName("slide");
+    function showSlides(n){
+      if(n>=slides.length) slideIndex=0;
+      if(n<0) slideIndex=slides.length-1;
+      for(let i=0;i<slides.length;i++){
+        slides[i].style.display="none";
       }
-      slides[slideIndex].style.display = "block";
+      slides[slideIndex].style.display="block";
     }
-    function plusSlides(n) {
-      slideIndex += n;
+    function plusSlides(n){
+      slideIndex+=n;
       showSlides(slideIndex);
     }
-    setInterval(() => { slideIndex++; showSlides(slideIndex); }, 5000);
+    setInterval(()=>{slideIndex++;showSlides(slideIndex);},5000);
     showSlides(slideIndex);
 
     // 烟花
-    const canvas = document.getElementById("fireworks");
-    const ctx = canvas.getContext("2d");
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    window.addEventListener("resize", () => {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
+    const canvas=document.getElementById("fireworks");
+    const ctx=canvas.getContext("2d");
+    let w=canvas.width=window.innerWidth;
+    let h=canvas.height=window.innerHeight;
+    window.addEventListener("resize",()=>{
+      w=canvas.width=window.innerWidth;
+      h=canvas.height=window.innerHeight;
     });
-    const fireworks = [];
-    document.addEventListener("click", e => {
-      for (let i = 0; i < 80; i++) {
+    const fireworks=[];
+    document.addEventListener("click",e=>{
+      for(let i=0;i<80;i++){
         fireworks.push({
-          x: e.clientX,
-          y: e.clientY,
-          radius: 2,
-          angle: Math.random() * 2 * Math.PI,
-          speed: Math.random() * 5 + 2,
-          alpha: 1,
-          decay: Math.random() * 0.015 + 0.007,
-          color: `hsl(${Math.random() * 360}, 100%, 70%)`
+          x:e.clientX,
+          y:e.clientY,
+          radius:2,
+          angle:Math.random()*2*Math.PI,
+          speed:Math.random()*5+2,
+          alpha:1,
+          decay:Math.random()*0.015+0.007,
+          color:`hsl(${Math.random()*360},100%,70%)`
         });
       }
     });
-    function animate() {
-      ctx.clearRect(0, 0, w, h);
-      for (let i = fireworks.length - 1; i >= 0; i--) {
-        const f = fireworks[i];
-        f.x += Math.cos(f.angle) * f.speed;
-        f.y += Math.sin(f.angle) * f.speed;
-        f.alpha -= f.decay;
-        if (f.alpha <= 0) {
-          fireworks.splice(i, 1);
+    function animate(){
+      ctx.clearRect(0,0,w,h);
+      for(let i=fireworks.length-1;i>=0;i--){
+        const f=fireworks[i];
+        f.x+=Math.cos(f.angle)*f.speed;
+        f.y+=Math.sin(f.angle)*f.speed;
+        f.alpha-=f.decay;
+        if(f.alpha<=0){
+          fireworks.splice(i,1);
           continue;
         }
-        ctx.globalAlpha = f.alpha;
+        ctx.globalAlpha=f.alpha;
         ctx.beginPath();
-        ctx.arc(f.x, f.y, f.radius, 0, 2 * Math.PI);
-        ctx.fillStyle = f.color;
+        ctx.arc(f.x,f.y,f.radius,0,2*Math.PI);
+        ctx.fillStyle=f.color;
         ctx.fill();
       }
       requestAnimationFrame(animate);
     }
     animate();
+
+    // —— 新增：三次点击标题跳转 —— 
+    let titleClickCount = 0;
+    let titleClickTimer = null;
+    const titleElem = document.querySelector('h1');
+    titleElem.addEventListener('click', () => {
+      titleClickCount++;
+      if (titleClickTimer) clearTimeout(titleClickTimer);
+      titleClickTimer = setTimeout(() => {
+        titleClickCount = 0;
+      }, 1000);
+      if (titleClickCount >= 3) {
+        window.location.href = 'diary/diary.html';
+      }
+    });
+    // —— 新增结束 —— 
+
   </script>
 </body>
 </html>
