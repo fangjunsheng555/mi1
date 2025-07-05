@@ -104,9 +104,17 @@
 <body>
   <h2>🌸 蜜语日记 🌸</h2>
 
+  <!-- 音乐选择下拉框 -->
+  <label for="bgmSelect">选择背景音乐：</label>
+  <select id="bgmSelect" onchange="changeBgm()">
+    <option value="浪漫手机.mp3">浪漫手机</option>
+    <option value="可爱女人.mp3">可爱女人</option>
+    <option value="园游会.mp3">园游会</option>
+  </select>
+
   <!-- BGM 播放 -->
   <button onclick="playBgm()">点击播放背景音乐</button>
-  <audio id="bgm" src="浪漫手机.mp3" loop></audio>
+  <audio id="bgm" loop></audio>
 
   <!-- 定位输入框（只读）-->
   <input type="text" id="location" readonly placeholder="定位：获取中…">
@@ -168,6 +176,14 @@
       const bgm = document.getElementById('bgm');
       bgm.style.display = 'block';
       bgm.play();
+    }
+
+    // 改变背景音乐
+    function changeBgm() {
+      const selectedMusic = document.getElementById('bgmSelect').value;
+      const bgm = document.getElementById('bgm');
+      bgm.src = selectedMusic; // 设置选择的背景音乐
+      bgm.play(); // 播放音乐
     }
 
     // 提交日记
