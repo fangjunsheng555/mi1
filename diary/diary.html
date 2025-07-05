@@ -127,17 +127,35 @@
       max-height: 90vh;
       border-radius: 10px;
     }
+    #musicCtrlBtn {
+      display:inline-block;
+      background: #fff0f6;
+      color:#ff69b4;
+      border:none;
+      border-radius:50%;
+      width:46px;height:46px;
+      font-size:25px;
+      margin-left:12px;
+      vertical-align:middle;
+      box-shadow: 0 1px 4px rgba(214,51,132,0.07);
+      transition: background .18s;
+    }
+    #musicCtrlBtn:hover { background:#ffd1e6;}
   </style>
 </head>
 <body>
   <h2>🌸 蜜语日记 🌸</h2>
-  <!-- 音乐选择 -->
-  <label for="bgmSelect">选择背景音乐：</label>
-  <select id="bgmSelect">
-    <option value="浪漫手机.mp3">浪漫手机</option>
-    <option value="可爱女人.mp3">可爱女人</option>
-    <option value="园游会.mp3">园游会</option>
-  </select>
+  <div style="margin-bottom:10px;">
+    <label for="bgmSelect">选择背景音乐：</label>
+    <select id="bgmSelect">
+      <option value="浪漫手机.mp3">浪漫手机</option>
+      <option value="可爱女人.mp3">可爱女人</option>
+      <option value="园游会.mp3">园游会</option>
+    </select>
+    <button id="musicCtrlBtn" onclick="toggleMusic()" title="播放/暂停">
+      ▶️
+    </button>
+  </div>
   <audio id="bgm" loop></audio>
   <input type="text" id="location" readonly placeholder="定位：获取中…">
   <input type="password" id="password" placeholder="请输入密码（蜜儿我们认识的年月日）" />
@@ -162,3 +180,215 @@
   AV.init({
     appId: 'bxR762L3dDWFiyX2u7nsxLHV-gzGzoHsz',
     appKey: 'uVCOuieZ3JnX7zH8BQdLSzoF',
+    serverURL: 'https://bxr762l3.lc-cn-n1-shared.com'
+  });
+
+  // 定位
+  async function getLocationFromIP() {
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      const city = data.city || '未知城市';
+      document.getElementById('location').value = '定位：' + city;
+      return city;
+    } catch (error) {
+      document.getElementById('location').value = '定位：获取失败';
+      return '未知城市';
+    }
+  }
+  let currentCity = '未知城市';
+  getLocationFromIP().then(city => currentCity = city);
+
+  // ======= BGM 自动播放/切歌自动播放/播放暂停按钮同步 =======
+  const bgm = document.getElementById('bgm');
+  const bgmSelect = document.getElementById('bgmSelect');
+  const musicCtrlBtn = document.getElementById('musicCtrlBtn');
+
+  // 歌曲切换自动播放
+  bgmSelect.onchange = function(){
+    bgm.src = this.value;
+    bgm.play();
+  };
+  // 播放暂停切换
+  function toggleMusic(){
+    if(bgm.paused){
+      bgm.play();
+    }else{
+      bgm.pause();
+    }
+  }
+  // 按钮状态同步
+  function updateMusicBtn() {
+    musicCtrlBtn.innerText = bgm.paused ? "▶️" : "⏸";
+  }
+  bgm.onplay = updateMusicBtn;
+  bgm.onpause = updateMusicBtn;
+
+  // 自动播放
+  function tryAutoPlayMusic(){
+    bgm.src = bgmSelect.value;
+    bgm.style.display = 'block';
+    bgm.play().catch(()=>{});
+  }
+  // 自动播放兼容（用户首次点击页面）
+  document.body.addEventListener('pointerdown', function firstPlay(){
+    tryAutoPlayMusic();
+    document.body.removeEventListener('pointerdown', firstPlay);
+  });
+  window.onload = function() {
+    tryAutoPlayMusic();
+    loadDiaries();
+  };
+
+  // ========== 日记提交 ==========
+  async function submitDiary() {
+    const password = document.getElementById('password').value;
+    const correctPassword = '200211';
+    if (password !== correctPassword) {
+      alert('密码错误！请重新输入');
+      return;
+    }
+    const content = document.getElementById('diaryContent').value.trim();
+    const mood    = document.getElementById('mood').value;
+    const city    = currentCity;
+    const files   = document.getElementById('media').files;
+    if (!content) return alert('先写点内容吧～');
+    const Diary = AV.Object.extend('Diary');
+    const diary = new Diary();
+    diary.set('content', content);
+    diary.set('mood', mood);
+    diary.set('location', city);
+    const acl = new AV.ACL();
+    acl.setPublicReadAccess(true);
+    diary.setACL(acl);
+    if (files.length) {
+      const uploads = Array.from(files).map(f => {
+        const avFile = new AV.File(f.name, f);
+        return avFile.save();
+      });
+      const saved = await Promise.all(uploads);
+      diary.set('mediaFiles', saved.map(f => ({
+        url: f.url(), type: f.attributes.mime_type
+      })));
+    }
+    diary.set('likes', 0);
+    diary.save().then(() => {
+      alert('日记发表成功！');
+      document.getElementById('diaryContent').value = '';
+      document.getElementById('media').value = '';
+      loadDiaries();
+    }).catch(e => alert('保存失败：' + e.message));
+  }
+
+  // ========== 点赞/评论相关 ==========
+  // 每人每条日记只能点一次（本地localStorage判定）
+  function toggleLike(diaryId, dom) {
+    let liked = JSON.parse(localStorage.getItem('diaryLiked') || '[]');
+    if (liked.includes(diaryId)) {
+      alert('你已经点过赞啦~');
+      return;
+    }
+    const Diary = AV.Object.extend('Diary');
+    const q = new AV.Query(Diary);
+    q.get(diaryId).then(obj => {
+      let likes = obj.get('likes') || 0;
+      obj.set('likes', likes + 1);
+      obj.save().then(() => {
+        liked.push(diaryId);
+        localStorage.setItem('diaryLiked', JSON.stringify(liked));
+        dom.classList.add('liked');
+        dom.querySelector('.like-count').innerText = likes + 1;
+      });
+    });
+  }
+  // 评论
+  async function submitComment(diaryId, nickId, textId, listId) {
+    let text = document.getElementById(textId).value.trim();
+    let nick = document.getElementById(nickId).value.trim() || "匿名";
+    if (!text) return alert("请输入评论内容~");
+    const Comment = AV.Object.extend('Comment');
+    const comment = new Comment();
+    comment.set('diaryId', diaryId);
+    comment.set('nick', nick);
+    comment.set('content', text);
+    await comment.save();
+    document.getElementById(textId).value = '';
+    loadComments(diaryId, listId);
+  }
+  function loadComments(diaryId, listId) {
+    const Comment = AV.Object.extend('Comment');
+    const q = new AV.Query(Comment);
+    q.equalTo('diaryId', diaryId);
+    q.ascending('createdAt');
+    q.limit(100);
+    q.find().then(results => {
+      const c = document.getElementById(listId);
+      c.innerHTML = results.length
+        ? results.map(x => `<div class="comment-item"><b>${x.get('nick') || "匿名"}：</b>${x.get('content')}</div>`).join('')
+        : `<div style="color:#aaa;">还没有评论~</div>`;
+    });
+  }
+
+  // ========== 历史日记加载  ==========
+  function loadDiaries() {
+    const Diary = AV.Object.extend('Diary');
+    const q     = new AV.Query(Diary);
+    q.descending('createdAt');
+    q.limit(100); // 一次最多100条，如需更多做分页
+    q.find().then(results => {
+      const c = document.getElementById('diaryList');
+      c.innerHTML = '';
+      let likedList = JSON.parse(localStorage.getItem('diaryLiked') || '[]');
+      results.forEach((d,i) => {
+        const content = d.get('content');
+        const mood    = d.get('mood');
+        const city    = d.get('location');
+        const date    = d.createdAt.toLocaleString();
+        const media   = d.get('mediaFiles') || [];
+        const likes   = d.get('likes') || 0;
+        const diaryId = d.id;
+        // 每条评论区用唯一ID区分
+        let commentNickId = `commentNick${diaryId}`;
+        let commentTextId = `commentText${diaryId}`;
+        let commentListId = `commentList${diaryId}`;
+        let html = `<div class="diary-entry">
+          <div class="diary-content">${content}</div>`;
+        // 图片
+        if (media.length) {
+          html += `<div class="media-container">`;
+          media.forEach(f => {
+            html += f.type.startsWith('image')
+              ? `<img src="${f.url}" onclick="openLightbox('${f.url}')">`
+              : `<video src="${f.url}" controls></video>`;
+          });
+          html += `</div>`;
+        }
+        // 点赞+评论输入+评论区
+        html += `
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:6px;">
+          <span class="like-btn${likedList.includes(diaryId)?' liked':''}" onclick="toggleLike('${diaryId}', this)">
+            👍 <span class="like-count">${likes}</span>
+          </span>
+          <span style="color:#d63384;">💬 评论</span>
+        </div>
+        <div class="comment-area">
+          <div class="comment-list" id="${commentListId}" style="margin-bottom:6px;"></div>
+          <div class="comment-box">
+            <input type="text" id="${commentNickId}" placeholder="昵称(可空)" maxlength="12">
+            <textarea rows="1" id="${commentTextId}" placeholder="说点什么..." style="resize:none;height:28px;"></textarea>
+            <button onclick="submitComment('${diaryId}','${commentNickId}','${commentTextId}','${commentListId}')">发表</button>
+          </div>
+        </div>
+        <div class="meta-info">${mood} | ${city} | ${date}</div>
+        </div>`;
+        c.insertAdjacentHTML('beforeend', html);
+        // 加载该日记的评论
+        setTimeout(()=>loadComments(diaryId, commentListId),0);
+      });
+    });
+  }
+  // 图片放大
+  function openLightbox(imageUrl) {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = lightbox.querySelector('img');
+    lightboxImage.src =
