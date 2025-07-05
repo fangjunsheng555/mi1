@@ -284,7 +284,11 @@
       lightbox.style.display = 'none'; // 隐藏弹窗
     }
 
-    window.onload = loadDiaries;
+    window.onload = function() {
+      // 默认播放“浪漫手机”音乐
+      changeBgm(); // 直接触发选择默认音乐并播放
+      loadDiaries();
+    };
   </script>
 </body>
 </html>
