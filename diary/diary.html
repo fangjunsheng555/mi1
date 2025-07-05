@@ -1,190 +1,304 @@
-<script>
-  // LeanCloud初始化
-  AV.init({
-    appId: 'bxR762L3dDWFiyX2u7nsxLHV-gzGzoHsz',
-    appKey: 'uVCOuieZ3JnX7zH8BQdLSzoF',
-    serverURL: 'https://bxr762l3.lc-cn-n1-shared.com'
-  });
-
-  // IP定位
-  async function getLocationFromIP() {
-    try {
-      const response = await fetch('https://ipapi.co/json/');
-      const data = await response.json();
-      const city = data.city || '未知城市';
-      document.getElementById('location').value = '定位：' + city;
-      return city;
-    } catch (error) {
-      document.getElementById('location').value = '定位：获取失败';
-      return '未知城市';
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>蜜语日记 🌸</title>
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/leancloud-storage/dist/av-min.js"></script>
+  <style>
+    body {
+      position: relative;
+      overflow-x: hidden;
+      font-family: 'ZCOOL KuaiLe', cursive;
+      background: linear-gradient(135deg, #ffe4ec, #fff0f5, #fce4ec, #f3e5f5);
+      background-size: 400% 400%;
+      animation: gradientBG 12s ease infinite;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      color: #a0005b;
+      text-align: center;
     }
-  }
-  let currentCity = '未知城市';
-  getLocationFromIP().then(city => currentCity = city);
-
-  // BGM 播放
-  function toggleBgm() {
-    const bgm = document.getElementById('bgm');
-    if (bgm.paused) {
-      bgm.play();
-    } else {
-      bgm.pause();
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
-  }
-  function changeBgm() {
-    const selectedMusic = document.getElementById('bgmSelect').value;
-    const bgm = document.getElementById('bgm');
-    bgm.src = selectedMusic;
-    bgm.play();
-  }
-
-  // 发表日记
-  async function submitDiary() {
-    const password = document.getElementById('password').value;
-    const correctPassword = '200211';
-    if (password !== correctPassword) {
-      alert('密码错误！请重新输入');
-      return;
+    textarea, select, input, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+      font-size: 16px;
     }
-    const content = document.getElementById('diaryContent').value.trim();
-    const mood = document.getElementById('mood').value;
-    const city = currentCity;
-    const files = document.getElementById('media').files;
-    if (!content) return alert('先写点内容吧～');
-    const Diary = AV.Object.extend('Diary');
-    const diary = new Diary();
-    diary.set('content', content);
-    diary.set('mood', mood);
-    diary.set('location', city);
-    const acl = new AV.ACL();
-    acl.setPublicReadAccess(true);
-    diary.setACL(acl);
-    // 上传图片/视频
-    if (files.length) {
-      const uploads = Array.from(files).map(f => {
-        const avFile = new AV.File(f.name, f);
-        return avFile.save();
-      });
-      const saved = await Promise.all(uploads);
-      diary.set('mediaFiles', saved.map(f => ({
-        url: f.url(), type: f.attributes.mime_type
-      })));
+    button {
+      background-color: #ff69b4;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: transform .2s;
     }
-    diary.save().then(() => {
-      alert('日记发表成功！');
-      document.getElementById('diaryContent').value = '';
-      document.getElementById('media').value = '';
-      loadDiaries();
-    }).catch(e => alert('保存失败：' + e.message));
-  }
-
-  // 加载评论
-  async function getComments(diaryId) {
-    const Comment = AV.Object.extend('Comment');
-    const q = new AV.Query(Comment);
-    q.equalTo('diaryId', diaryId);
-    q.ascending('createdAt');
-    const res = await q.find();
-    return res.map(c => ({
-      content: c.get('content'),
-      time: c.createdAt.toLocaleString()
-    }));
-  }
-  // 渲染评论
-  async function renderComments(diaryId, container) {
-    const comments = await getComments(diaryId);
-    const listDiv = container.querySelector('.comments-list');
-    if (comments.length === 0) {
-      listDiv.innerHTML = '<div style="color:#aaa;font-size:14px;">暂无评论</div>';
-    } else {
-      listDiv.innerHTML = comments.map(c =>
-        `<div style="margin-bottom:3px;padding:3px 0 0 0;border-bottom:1px solid #faf2f8;">
-          <span style="color:#e84393;font-size:15px;">${escapeHtml(c.content)}</span>
-          <span style="color:#aaa;font-size:12px;float:right;">${c.time}</span>
-        </div>`
-      ).join('');
+    button:active {
+      transform: scale(0.95);
     }
-  }
-  // 提交评论
-  async function submitComment(diaryId, btn) {
-    const form = btn.parentElement;
-    const input = form.querySelector('input');
-    const val = input.value.trim();
-    if (!val) return;
-    btn.disabled = true;
-    const Comment = AV.Object.extend('Comment');
-    const c = new Comment();
-    c.set('diaryId', diaryId);
-    c.set('content', val);
-    await c.save();
-    input.value = '';
-    btn.disabled = false;
-    // 刷新评论
-    const container = form.parentElement;
-    renderComments(diaryId, container);
-  }
-  // 防止XSS
-  function escapeHtml(str) {
-    return (str||'').replace(/[<>"'&]/g, s=>({"<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;","&":"&amp;"}[s]));
-  }
+    .diary-entry {
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: left;
+      margin-bottom: 20px; /* 增加每个日记项之间的间隔 */
+    }
+    .diary-entry div {
+      margin-bottom: 20px; /* 文字和图片之间的间隔 */
+    }
+    /* 新增样式：Flexbox 布局来展示图片 */
+    .media-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 10px; /* 控制图片之间的间距 */
+      margin-bottom: 20px;
+    }
+    .media-container img {
+      max-width: 22%; /* 每张图片占一行的五分之一，最多四张 */
+      cursor: pointer; /* 鼠标悬停时显示为手型 */
+      transition: transform 0.2s ease; /* 图片过渡效果 */
+      margin-bottom: 15px; /* 图片和图片之间的间隔 */
+    }
+    .media-container img:hover {
+      transform: scale(1.1); /* 图片悬停时放大 */
+    }
+    .meta-info {
+      font-size: 14px;
+      color: #888;
+      margin-top: 8px;
+    }
+    #bgm { display: none; }
+    /* 放大图的弹窗 */
+    #lightbox {
+      display: none; /* 默认隐藏 */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
 
-  // 加载历史日记（加评论功能）
-  function loadDiaries() {
-    const Diary = AV.Object.extend('Diary');
-    const q = new AV.Query(Diary);
-    q.descending('createdAt');
-    q.limit(20);
-    q.find().then(results => {
-      const c = document.getElementById('diaryList');
-      c.innerHTML = '';
-      results.forEach(async d => {
-        const content = d.get('content');
-        const mood    = d.get('mood');
-        const city    = d.get('location');
-        const date    = d.createdAt.toLocaleString();
-        const media   = d.get('mediaFiles') || [];
-        const diaryId = d.id;
-        let html = `<div class="diary-entry">
-                      <div>${escapeHtml(content)}</div>`;
-        if (media.length) {
-          html += `<div class="media-container">`;
-          media.forEach(f => {
-            html += f.type.startsWith('image')
-              ? `<img src="${f.url}" onclick="openLightbox('${f.url}')">`
-              : `<video src="${f.url}" controls></video>`;
-          });
-          html += `</div>`;
-        }
-        html += `<div class="meta-info">${escapeHtml(mood)} | ${escapeHtml(city)} | ${date}</div>
-                <div class="comments-container" data-diaryid="${diaryId}">
-                  <div class="comments-list" style="margin-top:8px;"></div>
-                  <div class="comment-form" style="display:flex;gap:6px;align-items:center;margin-top:5px;">
-                    <input type="text" placeholder="写下你的评论..." maxlength="100" style="flex:1;padding:6px 10px;font-size:15px;border-radius:6px;border:1px solid #eee;">
-                    <button type="button" style="background:#ff69b4;color:white;border:none;padding:6px 14px;border-radius:8px;font-size:14px;cursor:pointer;" onclick="submitComment('${diaryId}', this)">发送</button>
-                  </div>
-                </div>
-                </div>`;
-        c.insertAdjacentHTML('beforeend', html);
-        // 渲染评论
-        const entry = c.lastElementChild;
-        renderComments(diaryId, entry.querySelector('.comments-container'));
-      });
+    #lightbox img {
+      max-width: 90%;
+      max-height: 90%;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>🌸 蜜语日记 🌸</h2>
+
+  <!-- 音乐选择下拉框 -->
+  <label for="bgmSelect">选择背景音乐：</label>
+  <select id="bgmSelect" onchange="changeBgm()">
+    <option value="浪漫手机.mp3">浪漫手机</option>
+    <option value="可爱女人.mp3">可爱女人</option>
+    <option value="园游会.mp3">园游会</option>
+  </select>
+
+  <!-- BGM 播放 -->
+  <button onclick="toggleBgm()">点击播放/暂停音乐</button>
+  <audio id="bgm" loop></audio>
+
+  <!-- 定位输入框（只读）-->
+  <input type="text" id="location" readonly placeholder="定位：获取中…">
+
+  <!-- 密码验证 -->
+  <input type="password" id="password" placeholder="请输入密码（蜜儿我们认识的年月日）" />
+
+  <!-- 日记发表区 -->
+  <textarea id="diaryContent" rows="4" placeholder="今天想记录些什么呢？"></textarea>
+  <select id="mood">
+    <option>😊 开心</option>
+    <option>😢 难过</option>
+    <option>🥰 甜蜜</option>
+    <option>😡 生气</option>
+    <option>😐 一般</option>
+  </select>
+  <input type="file" id="media" accept="image/*,video/*" multiple>
+  <button onclick="submitDiary()">发表日记 🌸</button>
+
+  <!-- 历史日记标题 -->
+  <div id="historyTitle">📜 历史日记</div>
+  <!-- 历史日记展示 -->
+  <div id="diaryList"></div>
+
+  <!-- 放大图的弹窗 -->
+  <div id="lightbox" onclick="closeLightbox()">
+    <img src="" alt="放大图" />
+  </div>
+
+  <script>
+    // 初始化 LeanCloud
+    AV.init({
+      appId: 'bxR762L3dDWFiyX2u7nsxLHV-gzGzoHsz',
+      appKey: 'uVCOuieZ3JnX7zH8BQdLSzoF',
+      serverURL: 'https://bxr762l3.lc-cn-n1-shared.com'
     });
-  }
 
-  // 大图放大
-  function openLightbox(imageUrl) {
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImage = lightbox.querySelector('img');
-    lightboxImage.src = imageUrl;
-    lightbox.style.display = 'flex';
-  }
-  function closeLightbox() {
-    document.getElementById('lightbox').style.display = 'none';
-  }
+    // 获取IP定位信息
+    async function getLocationFromIP() {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        const city = data.city || '未知城市'; // 默认'未知城市' 如果没有获取到城市
+        document.getElementById('location').value = '定位：' + city;
+        return city;
+      } catch (error) {
+        console.error('获取IP定位失败：', error);
+        document.getElementById('location').value = '定位：获取失败';
+        return '未知城市';
+      }
+    }
 
-  window.onload = function() {
-    changeBgm();
-    loadDiaries();
-  };
-</script>
+    // 获取位置
+    let currentCity = '未知城市';
+    getLocationFromIP().then(city => currentCity = city);
+
+    // 播放 BGM
+    function playBgm() {
+      const bgm = document.getElementById('bgm');
+      bgm.style.display = 'block';
+      bgm.play();
+    }
+
+    // 切换播放/暂停
+    function toggleBgm() {
+      const bgm = document.getElementById('bgm');
+      if (bgm.paused) {
+        bgm.play(); // 播放音乐
+      } else {
+        bgm.pause(); // 暂停音乐
+      }
+    }
+
+    // 改变背景音乐
+    function changeBgm() {
+      const selectedMusic = document.getElementById('bgmSelect').value;
+      const bgm = document.getElementById('bgm');
+      bgm.src = selectedMusic; // 设置选择的背景音乐
+      bgm.play(); // 播放音乐
+    }
+
+    // 提交日记
+    async function submitDiary() {
+      const password = document.getElementById('password').value;
+      const correctPassword = '200211'; // 正确的密码
+
+      // 验证密码
+      if (password !== correctPassword) {
+        alert('密码错误！请重新输入');
+        return; // 如果密码错误，停止提交
+      }
+
+      const content = document.getElementById('diaryContent').value.trim();
+      const mood    = document.getElementById('mood').value;
+      const city    = currentCity;
+      const files   = document.getElementById('media').files;
+      if (!content) return alert('先写点内容吧～');
+
+      const Diary = AV.Object.extend('Diary');
+      const diary = new Diary();
+      diary.set('content', content);
+      diary.set('mood', mood);
+      diary.set('location', city);
+
+      // —— 公共可读 ACL —— 
+      const acl = new AV.ACL();
+      acl.setPublicReadAccess(true);
+      diary.setACL(acl);
+
+      // 上传图片/视频
+      if (files.length) {
+        const uploads = Array.from(files).map(f => {
+          const avFile = new AV.File(f.name, f);
+          return avFile.save();
+        });
+        const saved = await Promise.all(uploads);
+        diary.set('mediaFiles', saved.map(f => ({
+          url: f.url(), type: f.attributes.mime_type
+        })));
+      }
+
+      diary.save().then(() => {
+        alert('日记发表成功！');
+        document.getElementById('diaryContent').value = '';
+        document.getElementById('media').value = '';
+        loadDiaries();
+      }).catch(e => alert('保存失败：' + e.message));
+    }
+
+    // 加载历史日记
+    function loadDiaries() {
+      const Diary = AV.Object.extend('Diary');
+      const q     = new AV.Query(Diary);
+      q.descending('createdAt');
+      q.limit(20);
+      q.find().then(results => {
+        const c = document.getElementById('diaryList');
+        c.innerHTML = '';
+        results.forEach(d => {
+          const content = d.get('content');
+          const mood    = d.get('mood');
+          const city    = d.get('location');
+          const date    = d.createdAt.toLocaleString();
+          const media   = d.get('mediaFiles') || [];
+          let html = `<div class="diary-entry">
+                        <div>${content}</div>`;
+
+          // 使用 Flexbox 布局来显示图片
+          if (media.length) {
+            html += `<div class="media-container">`;
+            media.forEach(f => {
+              html += f.type.startsWith('image')
+                ? `<img src="${f.url}" onclick="openLightbox('${f.url}')">` // 点击图片时打开大图
+                : `<video src="${f.url}" controls></video>`;
+            });
+            html += `</div>`;
+          }
+
+          html += `<div class="meta-info">${mood} | ${city} | ${date}</div>
+                  </div>`;
+          c.insertAdjacentHTML('beforeend', html);
+        });
+      });
+    }
+
+    // 打开大图
+    function openLightbox(imageUrl) {
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImage = lightbox.querySelector('img');
+      lightboxImage.src = imageUrl;
+      lightbox.style.display = 'flex'; // 显示弹窗
+    }
+
+    // 关闭大图
+    function closeLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      lightbox.style.display = 'none'; // 隐藏弹窗
+    }
+
+    window.onload = function() {
+      // 默认播放“浪漫手机”音乐
+      changeBgm(); // 直接触发选择默认音乐并播放
+      loadDiaries();
+    };
+  </script>
+</body>
+</html>
