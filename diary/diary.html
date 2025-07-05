@@ -113,7 +113,7 @@
   </select>
 
   <!-- BGM 播放 -->
-  <button onclick="playBgm()">点击播放背景音乐</button>
+  <button onclick="toggleBgm()">点击播放/暂停背景音乐</button>
   <audio id="bgm" loop></audio>
 
   <!-- 定位输入框（只读）-->
@@ -176,6 +176,16 @@
       const bgm = document.getElementById('bgm');
       bgm.style.display = 'block';
       bgm.play();
+    }
+
+    // 切换播放/暂停
+    function toggleBgm() {
+      const bgm = document.getElementById('bgm');
+      if (bgm.paused) {
+        bgm.play(); // 播放音乐
+      } else {
+        bgm.pause(); // 暂停音乐
+      }
     }
 
     // 改变背景音乐
