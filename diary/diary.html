@@ -52,11 +52,27 @@
       margin-top: 15px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       text-align: left;
+      margin-bottom: 20px; /* 增加每个日记项之间的间隔 */
     }
-    img, video {
-      max-width: 100%;
-      border-radius: 8px;
-      margin-top: 10px;
+    .diary-entry div {
+      margin-bottom: 20px; /* 文字和图片之间的间隔 */
+    }
+    /* 新增样式：Flexbox 布局来展示图片 */
+    .media-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 10px; /* 控制图片之间的间距 */
+      margin-bottom: 20px;
+    }
+    .media-container img {
+      max-width: 22%; /* 每张图片占一行的五分之一，最多四张 */
+      cursor: pointer; /* 鼠标悬停时显示为手型 */
+      transition: transform 0.2s ease; /* 图片过渡效果 */
+      margin-bottom: 15px; /* 图片和图片之间的间隔 */
+    }
+    .media-container img:hover {
+      transform: scale(1.1); /* 图片悬停时放大 */
     }
     .meta-info {
       font-size: 14px;
@@ -64,41 +80,23 @@
       margin-top: 8px;
     }
     #bgm { display: none; }
-    /* 漂浮爱心 */
-    .heart {
-      position: absolute;
-      font-size: 24px;
-      color: #ff6eb4;
-      opacity: 0;
-      animation: floatUp 4s ease-out forwards;
-      pointer-events: none;
-    }
-    @keyframes floatUp {
-      0% { transform: translateY(0) scale(1); opacity: 1; }
-      100% { transform: translateY(-200px) scale(1.5); opacity: 0; }
-    }
-    /* 定位输入框：只读 */
-    #location {
-      background: rgba(255,255,255,0.8);
-      border: none;
-      color: #555;
-      font-weight: bold;
-    }
-    /* 历史日记标题 */
-    #historyTitle {
-      margin-top: 30px;
-      font-size: 20px;
-      color: #d63384;
-      text-shadow: 1px 1px 2px #ffc0cb;
-    }
-    /* 密码输入框 */
-    #password {
-      font-size: 16px;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+    /* 放大图的弹窗 */
+    #lightbox {
+      display: none; /* 默认隐藏 */
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
-      margin-bottom: 12px;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    #lightbox img {
+      max-width: 90%;
+      max-height: 90%;
     }
   </style>
 </head>
@@ -132,6 +130,11 @@
   <div id="historyTitle">📜 历史日记</div>
   <!-- 历史日记展示 -->
   <div id="diaryList"></div>
+
+  <!-- 放大图的弹窗 -->
+  <div id="lightbox" onclick="closeLightbox()">
+    <img src="" alt="放大图" />
+  </div>
 
   <script>
     // 初始化 LeanCloud
@@ -232,16 +235,37 @@
           const media   = d.get('mediaFiles') || [];
           let html = `<div class="diary-entry">
                         <div>${content}</div>`;
-          media.forEach(f => {
-            html += f.type.startsWith('image')
-              ? `<img src="${f.url}">`
-              : `<video src="${f.url}" controls></video>`;
-          });
+
+          // 使用 Flexbox 布局来显示图片
+          if (media.length) {
+            html += `<div class="media-container">`;
+            media.forEach(f => {
+              html += f.type.startsWith('image')
+                ? `<img src="${f.url}" onclick="openLightbox('${f.url}')">` // 点击图片时打开大图
+                : `<video src="${f.url}" controls></video>`;
+            });
+            html += `</div>`;
+          }
+
           html += `<div class="meta-info">${mood} | ${city} | ${date}</div>
                   </div>`;
           c.insertAdjacentHTML('beforeend', html);
         });
       });
+    }
+
+    // 打开大图
+    function openLightbox(imageUrl) {
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImage = lightbox.querySelector('img');
+      lightboxImage.src = imageUrl;
+      lightbox.style.display = 'flex'; // 显示弹窗
+    }
+
+    // 关闭大图
+    function closeLightbox() {
+      const lightbox = document.getElementById('lightbox');
+      lightbox.style.display = 'none'; // 隐藏弹窗
     }
 
     window.onload = loadDiaries;
